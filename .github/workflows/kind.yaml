@@ -1,0 +1,33 @@
+name: KinD tests
+
+on: [push]
+
+defaults:
+  run:
+    shell: bash
+    working-directory: config-policy-controller
+
+jobs:
+  kind-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - '1.17'
+    name: KinD tests
+    steps:
+    - name: Checkout Config Policy Controller
+      uses: actions/checkout@v2
+      with:
+        path: config-policy-controller
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - name: Set up Go - ${{ matrix.go }}
+      uses: actions/setup-go@v2
+      id: go
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Do the test
+      run: |
+        ./build/run-e2e-tests.sh
