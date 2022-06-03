@@ -1,0 +1,13 @@
+on:
+  pull_request:
+    branches:
+      - main
+      - release-2.[5-9]
+  push:
+    branches:
+      - main
+      - release-2.[5-9]
+
+jobs:
+  kind-tests:
+    uses: ./.github/workflows/kind-e2e.yml

@@ -8,16 +8,7 @@ on:
       test_args:
         required: false
         type: string
-        default: ''
-
-  pull_request:
-    branches:
-      - main
-      - release-2.[5-9]
-  push:
-    branches:
-      - main
-      - release-2.[5-9]
+        default: '-p'
 
 defaults:
   run:
@@ -31,16 +22,22 @@ jobs:
     env:
       REGISTRY: localhost:5000
     strategy:
+      fail-fast: false
       matrix:
         # Run tests on oldest and newest supported OCP Kubernetes
         # - OCP 4.5 runs Kubernetes v1.18
         # KinD tags: https://hub.docker.com/r/kindest/node/tags
         kind:
-          # - 'v1.18.15'
+          - 'v1.18.20'
+          - 'v1.19.16'
+          - 'v1.20.15'
+          - 'v1.21.12'
+          - 'v1.22.9'
+          - 'v1.23.6'
           - 'latest'
         deployOnHub:
-          - 'true'
-          # - 'false'  
+          # - 'true'
+          - 'false'  
 
     steps:
     - name: Checkout Component Repository
@@ -50,11 +47,20 @@ jobs:
         # (automatically checks out the repo that is calling this workflow)
         path: policy-component
 
+    # Checkout a branch like `main` or `release-2.5` if run from another repo
     - name: Checkout Policy Framework
+      if: ${{ github.repository != 'JustinKuli/governance-policy-framework' }}
       uses: actions/checkout@v2
       with:
         repository: stolostron/governance-policy-framework
         ref: ${{ github.event.pull_request.base.ref }}
+        path: governance-policy-framework
+
+    # Checkout the current commit if run from this repo
+    - name: Checkout Policy Framework
+      if: ${{ github.repository == 'JustinKuli/governance-policy-framework' }}
+      uses: actions/checkout@v2
+      with:
         path: governance-policy-framework
 
     - name: Set up Go

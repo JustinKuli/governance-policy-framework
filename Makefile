@@ -115,7 +115,7 @@ kind-bootstrap-cluster: kind-create-cluster install-crds install-resources kind-
 kind-bootstrap-cluster-dev: kind-create-cluster install-crds install-resources
 
 .PHONY: kind-deploy-policy-controllers
-kind-deploy-policy-controllers: kind-deploy-cert-policy-controller kind-deploy-config-policy-controller kind-deploy-iam-policy-controller kind-deploy-olm
+kind-deploy-policy-controllers: kind-deploy-cert-policy-controller kind-deploy-config-policy-controller kind-deploy-iam-policy-controller
 
 .PHONY: kind-policy-framework-hub-setup
 kind-policy-framework-hub-setup:
@@ -173,11 +173,11 @@ deploy-community-policy-framework-managed: deploy-policy-framework-managed-crd-o
 .PHONY: kind-deploy-policy-framework
 kind-deploy-policy-framework:
 	@echo installing policy-propagator on hub
-	kubectl create ns $(KIND_HUB_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create ns $(KIND_HUB_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f - --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	kubectl apply -f https://raw.githubusercontent.com/stolostron/governance-policy-propagator/$(RELEASE_BRANCH)/deploy/operator.yaml -n $(KIND_HUB_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	@echo creating secrets on managed
-	kubectl create ns $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
-	kubectl create secret -n $(KIND_MANAGED_NAMESPACE) generic hub-kubeconfig --from-file=kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)_internal --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create ns $(KIND_MANAGED_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f - --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)
+	kubectl create secret -n $(KIND_MANAGED_NAMESPACE) generic hub-kubeconfig --from-file=kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)_internal --dry-run=client -o yaml | kubectl apply -f - --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)
 	@if [ "$(deployOnHub)" = "true" ]; then\
 		echo skipping installing policy-spec-sync on managed;\
 	else\
@@ -282,9 +282,9 @@ install-crds:
 .PHONY: install-resources
 install-resources:
 	@echo creating user namespace on hub
-	kubectl create ns policy-test --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create ns policy-test --dry-run=client -o yaml | kubectl apply -f - --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	@echo creating cluster namespace on hub 
-	kubectl create ns managed --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create ns managed --dry-run=client -o yaml | kubectl apply -f - --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	kubectl apply -f test/resources/managed-cluster.yaml --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	@echo creating cluster namespace on managed 
 	kubectl create ns managed --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) --dry-run=client -o yaml | kubectl apply -f -
@@ -298,7 +298,7 @@ GINKGO = $(LOCAL_BIN)/ginkgo
 .PHONY: e2e-test
 e2e-test:
 	@if [ -z "$(TEST_FILE)" ]; then\
-		$(GINKGO) -v --no-color $(TEST_ARGS) --fail-fast test/e2e -- -cluster_namespace=$(MANAGED_CLUSTER_NAME) -k8s_client=$(K8SCLIENT) ;\
+		$(GINKGO) -v --no-color $(TEST_ARGS) test/e2e -- -cluster_namespace=$(MANAGED_CLUSTER_NAME) -k8s_client=$(K8SCLIENT) --timeout_seconds=20 ;\
 	else\
 		$(GINKGO) -v --no-color $(TEST_ARGS) --fail-fast --focus-file=$(TEST_FILE) test/e2e -- -cluster_namespace=$(MANAGED_CLUSTER_NAME) -k8s_client=$(K8SCLIENT) ;\
 	fi

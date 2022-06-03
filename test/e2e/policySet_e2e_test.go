@@ -96,7 +96,7 @@ var _ = Describe("Test policy set", func() {
 			Expect(err).To(BeNil())
 		})
 
-		It("Should update to compliant if all its child policy violations have been remediated", func() {
+		It("Should update to compliant if all its child policy violations have been remediated", FlakeAttempts(2), func() {
 			By("Enforcing the policy to make it compliant")
 			rootPlc := utils.GetWithTimeout(
 				clientHubDynamic, common.GvrPolicy, testPolicyName, userNamespace, true, defaultTimeoutSeconds,

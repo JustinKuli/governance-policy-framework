@@ -250,7 +250,7 @@ var _ = Describe("Test configuration policy", Ordered, func() {
 		It("should be created on managed cluster", func() {
 			common.DoCreatePolicyTest(clientHubDynamic, clientManagedDynamic, rolePolicyYaml, &common.GvrConfigurationPolicy)
 		})
-		It("the policy should be compliant after enforcing it", func() {
+		It("the policy should be compliant after enforcing it", FlakeAttempts(2), func() {
 			By("Patching remediationAction = enforce on root policy")
 			rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, rolePolicyName, userNamespace, true, defaultTimeoutSeconds)
 			rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
