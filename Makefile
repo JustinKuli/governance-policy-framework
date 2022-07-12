@@ -348,9 +348,18 @@ e2e-debug-acm: e2e-debug
 			PODNAME=$${POD##"pod/"}; \
 			echo "POD: $${PODNAME}"; \
 			for CONTAINER in $$(kubectl get pod $${PODNAME} -n $(KIND_MANAGED_NAMESPACE) -o jsonpath='{.spec.containers[*].name}'  --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)); do\
-	  			echo "CONTAINER: $${CONTAINER}"; \
+				echo "CONTAINER: $${CONTAINER}"; \
 				kubectl logs $${PODNAME} -c $${CONTAINER} -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) > $(DEBUG_DIR)/managed_logs_$${PODNAME}_$${CONTAINER}.log; \
 			done;\
+		done;\
+	done;\
+	echo "INSIGHTS-POLICYREPORT"; \
+	for POD in $$(kubectl get pods -l app=policyreport -n open-cluster-management -o name --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)); do \
+		PODNAME=$${POD##"pod/"}; \
+		echo "POD: $${PODNAME}"; \
+		for CONTAINER in $$(kubectl get pod $${PODNAME} -n open-cluster-management -o jsonpath='{.spec.containers[*].name}'  --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)); do\
+			echo "CONTAINER: $${CONTAINER}"; \
+			kubectl logs $${PODNAME} -c $${CONTAINER} -n open-cluster-management --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME) > $(DEBUG_DIR)/managed_logs_$${PODNAME}_$${CONTAINER}.log; \
 		done;\
 	done
 
