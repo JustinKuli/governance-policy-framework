@@ -40,6 +40,7 @@ func TestE2e(t *testing.T) {
 func init() {
 	klog.SetOutput(GinkgoWriter)
 	klog.InitFlags(nil)
+	common.InitFlags(nil)
 }
 
 var _ = test.ConfigPruneBehavior()
@@ -48,7 +49,6 @@ var _ = test.TemplateSyncErrors()
 
 var _ = BeforeSuite(func() {
 	By("Setup hub and managed client")
-	common.InitFlags(nil)
 	common.InitInterfaces(common.KubeconfigHub, common.KubeconfigManaged)
 
 	kubeconfigHub = common.KubeconfigHub
