@@ -65,19 +65,19 @@ var _ = Describe(
 		It(policyName+" should be created on the Hub", func() {
 			By("Creating the policy on the Hub")
 			_, err := utils.KubectlWithOutput(
-				"apply", "-f", policyYAML, "-n", "default", "--kubeconfig="+kubeconfigHub,
+				"apply", "-f", policyYAML, "-n", common.UserNamespace, "--kubeconfig="+kubeconfigHub,
 			)
 			Expect(err).To(BeNil())
 
 			By("Patching the placement rule")
 			err = common.PatchPlacementRule(
-				"default", "placement-"+policyName, clusterNamespace, kubeconfigHub,
+				common.UserNamespace, "placement-"+policyName, clusterNamespace, kubeconfigHub,
 			)
 			Expect(err).To(BeNil())
 
 			By("Checking that " + policyName + " exists on the Hub cluster")
 			rootPolicy := utils.GetWithTimeout(
-				clientHubDynamic, common.GvrPolicy, policyName, "default", true, defaultTimeoutSeconds,
+				clientHubDynamic, common.GvrPolicy, policyName, common.UserNamespace, true, defaultTimeoutSeconds,
 			)
 			Expect(rootPolicy).NotTo(BeNil())
 		})
@@ -87,7 +87,7 @@ var _ = Describe(
 			managedPolicy := utils.GetWithTimeout(
 				clientManagedDynamic,
 				common.GvrPolicy,
-				"default."+policyName,
+				common.UserNamespace+"."+policyName,
 				clusterNamespace,
 				true,
 				defaultTimeoutSeconds,
@@ -98,7 +98,7 @@ var _ = Describe(
 		It(policyName+" should be Compliant", func() {
 			By("Checking if the status of the root policy is Compliant")
 			Eventually(
-				common.GetComplianceState(clientHubDynamic, "default", policyName, clusterNamespace),
+				common.GetComplianceState(policyName),
 				defaultTimeoutSeconds*2,
 				1,
 			).Should(Equal(policiesv1.Compliant))

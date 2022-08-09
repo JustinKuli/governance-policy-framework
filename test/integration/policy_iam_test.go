@@ -25,7 +25,7 @@ var _ = Describe("GRC: [P1][Sev1][policy-grc] Test the policy-limitclusteradmin 
 	var getIAMComplianceState func() interface{}
 	BeforeEach(func() {
 		// Assign this here to avoid using nil pointers as arguments
-		getIAMComplianceState = common.GetComplianceState(clientHubDynamic, userNamespace, iamPolicyName, clusterNamespace)
+		getIAMComplianceState = common.GetComplianceState(iamPolicyName)
 	})
 
 	It("stable/"+iamPolicyName+" should be created on the hub", func() {

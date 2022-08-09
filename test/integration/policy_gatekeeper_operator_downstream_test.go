@@ -28,7 +28,7 @@ var _ = Describe("RHACM4K-3055", Ordered, Label("policy-collection", "stable", "
 
 		// Assign this here to avoid using nil pointers as arguments
 		getComplianceState = func(policyName string) func() interface{} {
-			return common.GetComplianceState(clientHubDynamic, userNamespace, policyName, clusterNamespace)
+			return common.GetComplianceState(policyName)
 		}
 	})
 	const gatekeeperPolicyURL = policyCollectStableURL + "CM-Configuration-Management/policy-gatekeeper-operator-downstream.yaml"

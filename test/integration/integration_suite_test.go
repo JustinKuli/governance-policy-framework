@@ -42,7 +42,6 @@ var (
 	clientManaged         kubernetes.Interface
 	clientManagedDynamic  dynamic.Interface
 
-	getComplianceState                      func(policyName string) func() interface{}
 	canCreateOpenshiftNamespacesInitialized bool
 	canCreateOpenshiftNamespacesResult      bool
 )
@@ -59,20 +58,19 @@ func init() {
 
 var _ = BeforeSuite(func() {
 	By("Setup hub and managed client")
+	common.InitFlags(nil)
+	common.InitInterfaces(common.KubeconfigHub, common.KubeconfigManaged)
+
 	kubeconfigHub = common.KubeconfigHub
 	kubeconfigManaged = common.KubeconfigManaged
 	userNamespace = common.UserNamespace
 	clusterNamespace = common.ClusterNamespace
 	defaultTimeoutSeconds = common.DefaultTimeoutSeconds
 
-	clientHub = common.NewKubeClient("", kubeconfigHub, "")
-	clientHubDynamic = common.NewKubeClientDynamic("", kubeconfigHub, "")
-	clientManaged = common.NewKubeClient("", kubeconfigManaged, "")
-	clientManagedDynamic = common.NewKubeClientDynamic("", kubeconfigManaged, "")
-
-	getComplianceState = func(policyName string) func() interface{} {
-		return common.GetComplianceState(clientHubDynamic, userNamespace, policyName, clusterNamespace)
-	}
+	clientHub = common.ClientHub
+	clientHubDynamic = common.ClientHubDynamic
+	clientManaged = common.ClientManaged
+	clientManagedDynamic = common.ClientManagedDynamic
 
 	By("Create Namespace if needed")
 	namespaces := clientHub.CoreV1().Namespaces()

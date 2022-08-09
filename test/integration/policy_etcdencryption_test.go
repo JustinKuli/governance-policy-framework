@@ -61,7 +61,7 @@ var _ = Describe("GRC: [P1][Sev1][policy-grc] Test the policy-etcdencryption pol
 	It("stable/"+policyEtcdEncryptionName+" should be NonCompliant", func() {
 		By("Checking if the status of the root policy is NonCompliant")
 		Eventually(
-			common.GetComplianceState(clientHubDynamic, userNamespace, policyEtcdEncryptionName, clusterNamespace),
+			common.GetComplianceState(policyEtcdEncryptionName),
 			defaultTimeoutSeconds*2,
 			1,
 		).Should(Equal(policiesv1.NonCompliant))

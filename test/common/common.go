@@ -3,7 +3,6 @@
 package common
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -13,18 +12,12 @@ import (
 	"strings"
 
 	ginkgo "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	"open-cluster-management.io/governance-policy-propagator/test/utils"
 )
 
@@ -36,11 +29,20 @@ var (
 	DefaultTimeoutSeconds  int
 	ManuallyPatchDecisions bool
 	K8sClient              string
+
+	ClientHub            kubernetes.Interface
+	ClientHubDynamic     dynamic.Interface
+	ClientManaged        kubernetes.Interface
+	ClientManagedDynamic dynamic.Interface
 )
 
 const MaxTravisTimeoutSeconds = 590 // Travis times out (by default) at 10 minutes
 
-func init() {
+func InitFlags(flagset *flag.FlagSet) {
+	if flagset == nil {
+		flagset = flag.CommandLine
+	}
+
 	flag.StringVar(&KubeconfigHub, "kubeconfig_hub", "../../kubeconfig_hub", "Location of the kubeconfig to use; defaults to KUBECONFIG if not set")
 	flag.StringVar(&KubeconfigManaged, "kubeconfig_managed", "../../kubeconfig_managed", "Location of the kubeconfig to use; defaults to KUBECONFIG if not set")
 	flag.StringVar(&UserNamespace, "user_namespace", "policy-test", "ns on hub to create root policy")
@@ -48,6 +50,13 @@ func init() {
 	flag.IntVar(&DefaultTimeoutSeconds, "timeout_seconds", 30, "Timeout seconds for assertion")
 	flag.BoolVar(&ManuallyPatchDecisions, "patch_decisions", true, "Whether to 'manually' patch PlacementRules with PlacementDecisions (set to false if the PlacementRule controller is running)")
 	flag.StringVar(&K8sClient, "k8s_client", "oc", "Which k8s client to use for some tests - `oc`, `kubectl`, or something else entirely")
+}
+
+func InitInterfaces(hubConfig, managedConfig string) {
+	ClientHub = NewKubeClient("", hubConfig, "")
+	ClientHubDynamic = NewKubeClientDynamic("", hubConfig, "")
+	ClientManaged = NewKubeClient("", managedConfig, "")
+	ClientManagedDynamic = NewKubeClientDynamic("", managedConfig, "")
 }
 
 func NewKubeClient(url, kubeconfig, context string) kubernetes.Interface {
@@ -111,24 +120,6 @@ func LoadConfig(url, kubeconfig, context string) (*rest.Config, error) {
 	return nil, fmt.Errorf("could not create a valid kubeconfig")
 }
 
-// GetComplianceState returns a function that requires no arguments that retrieves the
-// compliance state of the input policy.
-func GetComplianceState(clientHubDynamic dynamic.Interface, namespace, policyName, clusterNamespace string) func() interface{} {
-	return func() interface{} {
-		rootPlc := utils.GetWithTimeout(clientHubDynamic, GvrPolicy, policyName, namespace, true, DefaultTimeoutSeconds)
-		var policy policiesv1.Policy
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(rootPlc.UnstructuredContent(), &policy)
-		gomega.ExpectWithOffset(1, err).To(gomega.BeNil())
-		for _, statusPerCluster := range policy.Status.Status {
-			if statusPerCluster.ClusterNamespace == clusterNamespace {
-				return statusPerCluster.ComplianceState
-			}
-		}
-
-		return nil
-	}
-}
-
 func oc(args ...string) (string, error) {
 	// Determine whether output should be logged
 	printOutput := true
@@ -169,100 +160,6 @@ func OcManaged(args ...string) (string, error) {
 	return oc(args...)
 }
 
-// Patches the clusterSelector of the specified PlacementRule so that it will
-// always only match the targetCluster.
-func PatchPlacementRule(namespace, name, targetCluster, kubeconfigHub string) error {
-	_, err := utils.KubectlWithOutput(
-		"patch",
-		"-n",
-		namespace,
-		"placementrule.apps.open-cluster-management.io",
-		name,
-		"--type=json",
-		`-p=[{"op": "replace", "path": "/spec/clusterSelector", "value":{"matchExpressions":[{"key": "name", "operator": "In", "values": ["`+targetCluster+`"]}]}}]`,
-		"--kubeconfig="+kubeconfigHub,
-	)
-
-	return err
-}
-
-// DoCreatePolicyTest runs usual assertions around creating a policy. It will
-// create the given policy file to the hub cluster, on the user namespace. It
-// also patches the PlacementRule with a PlacementDecision if required. It
-// asserts that the policy was distributed to the managed cluster, and for any
-// templateGVRs supplied, it asserts that a policy template of that type (for
-// example ConfigurationPolicy) and the same name was created on the managed
-// cluster.
-//
-// It assumes that the given filename (stripped of an extension) matches the
-// name of the policy, and that the PlacementRule has the same name, with '-plr'
-// appended.
-func DoCreatePolicyTest(hub, managed dynamic.Interface, policyFile string, templateGVRs ...schema.GroupVersionResource) {
-	policyName := strings.TrimSuffix(filepath.Base(policyFile), filepath.Ext(policyFile))
-
-	ginkgo.By("Creating " + policyFile)
-	OcHub("apply", "-f", policyFile, "-n", UserNamespace)
-	plc := utils.GetWithTimeout(hub, GvrPolicy, policyName, UserNamespace, true, DefaultTimeoutSeconds)
-	gomega.ExpectWithOffset(1, plc).NotTo(gomega.BeNil())
-
-	if ManuallyPatchDecisions {
-		plrName := policyName + "-plr"
-		ginkgo.By("Patching " + plrName + " with decision of cluster " + ClusterNamespace)
-		plr := utils.GetWithTimeout(hub, GvrPlacementRule, plrName, UserNamespace, true, DefaultTimeoutSeconds)
-		plr.Object["status"] = utils.GeneratePlrStatus(ClusterNamespace)
-		_, err := hub.Resource(GvrPlacementRule).Namespace(UserNamespace).UpdateStatus(context.TODO(), plr, metav1.UpdateOptions{})
-		gomega.ExpectWithOffset(1, err).To(gomega.BeNil())
-	}
-
-	managedPolicyName := UserNamespace + "." + policyName
-	ginkgo.By("Checking " + managedPolicyName + " on managed cluster in ns " + ClusterNamespace)
-	mplc := utils.GetWithTimeout(managed, GvrPolicy, managedPolicyName, ClusterNamespace, true, DefaultTimeoutSeconds)
-	gomega.ExpectWithOffset(1, mplc).NotTo(gomega.BeNil())
-
-	for _, tmplGVR := range templateGVRs {
-		typedName := tmplGVR.String() + "/" + policyName
-		ginkgo.By("Checking that the policy template " + typedName + " is present on the managed cluster")
-		tmplPlc := utils.GetWithTimeout(managed, tmplGVR, policyName, ClusterNamespace, true, DefaultTimeoutSeconds)
-		gomega.ExpectWithOffset(1, tmplPlc).NotTo(gomega.BeNil())
-	}
-}
-
-// DoCleanupPolicy deletes the resources specified in the file, and asserts that
-// the propagated policy was removed from the managed cluster. For each templateGVR,
-// it will check that there is no longer a policy template (for example
-// ConfigurationPolicy) of the same name on the managed cluster.
-func DoCleanupPolicy(hub, managed dynamic.Interface, policyFile string, templateGVRs ...schema.GroupVersionResource) {
-	policyName := strings.TrimSuffix(filepath.Base(policyFile), filepath.Ext(policyFile))
-	ginkgo.By("Deleting " + policyFile)
-	OcHub("delete", "-f", policyFile, "-n", UserNamespace)
-	plc := utils.GetWithTimeout(hub, GvrPolicy, policyName, UserNamespace, false, DefaultTimeoutSeconds)
-	gomega.ExpectWithOffset(1, plc).To(gomega.BeNil())
-
-	managedPolicyName := UserNamespace + "." + policyName
-	ginkgo.By("Checking " + managedPolicyName + " was removed from managed cluster in ns " + ClusterNamespace)
-	mplc := utils.GetWithTimeout(managed, GvrPolicy, managedPolicyName, ClusterNamespace, false, DefaultTimeoutSeconds)
-	gomega.ExpectWithOffset(1, mplc).To(gomega.BeNil())
-
-	for _, tmplGVR := range templateGVRs {
-		typedName := tmplGVR.String() + "/" + policyName
-		ginkgo.By("Checking that the policy template " + typedName + " was removed from the managed cluster")
-		tmplPlc := utils.GetWithTimeout(managed, tmplGVR, policyName, ClusterNamespace, false, DefaultTimeoutSeconds)
-		gomega.ExpectWithOffset(1, tmplPlc).To(gomega.BeNil())
-	}
-}
-
-// DoRootComplianceTest asserts that the given policy has the given compliance
-// on the root policy on the hub cluster.
-func DoRootComplianceTest(hub dynamic.Interface, policyName string, compliance policiesv1.ComplianceState) {
-	ginkgo.By("Checking if the status of root policy " + policyName + " is " + string(compliance))
-	gomega.EventuallyWithOffset(
-		1,
-		GetComplianceState(hub, UserNamespace, policyName, ClusterNamespace),
-		DefaultTimeoutSeconds,
-		1,
-	).Should(gomega.Equal(compliance))
-}
-
 func OutputDebugInfo(testName string, additionalResources ...string) {
 	ginkgo.GinkgoWriter.Printf("%s test Kubernetes info:\n", testName)
 
@@ -277,39 +174,4 @@ func OutputDebugInfo(testName string, additionalResources ...string) {
 	for _, resource := range resources {
 		_, _ = utils.KubectlWithOutput("get", resource, "--all-namespaces", "-o", "yaml")
 	}
-}
-
-// GetLatestStatusMessage returns the most recent status message for the given policy template.
-// If the policy, template, or status do not exist for any reason, an empty string is returned.
-func GetLatestStatusMessage(managed dynamic.Interface, policyName string, templateIdx int) string {
-	replicatedPolicyName := UserNamespace + "." + policyName
-	policyInterface := managed.Resource(GvrPolicy).Namespace(ClusterNamespace)
-
-	policy, err := policyInterface.Get(context.TODO(), replicatedPolicyName, metav1.GetOptions{})
-	if err != nil {
-		return ""
-	}
-
-	details, found, err := unstructured.NestedSlice(policy.Object, "status", "details")
-	if !found || err != nil || len(details) <= templateIdx {
-		return ""
-	}
-
-	templateDetails, ok := details[templateIdx].(map[string]interface{})
-	if !ok {
-		return ""
-	}
-
-	history, found, err := unstructured.NestedSlice(templateDetails, "history")
-	if !found || err != nil || len(history) == 0 {
-		return ""
-	}
-
-	topHistoryItem, ok := history[0].(map[string]interface{})
-	if !ok {
-		return ""
-	}
-
-	message, _, _ := unstructured.NestedString(topHistoryItem, "message")
-	return message
 }

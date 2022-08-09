@@ -48,16 +48,19 @@ var _ = test.TemplateSyncErrors()
 
 var _ = BeforeSuite(func() {
 	By("Setup hub and managed client")
+	common.InitFlags(nil)
+	common.InitInterfaces(common.KubeconfigHub, common.KubeconfigManaged)
+
 	kubeconfigHub = common.KubeconfigHub
 	kubeconfigManaged = common.KubeconfigManaged
 	userNamespace = common.UserNamespace
 	clusterNamespace = common.ClusterNamespace
 	defaultTimeoutSeconds = common.DefaultTimeoutSeconds
 
-	clientHub = common.NewKubeClient("", kubeconfigHub, "")
-	clientHubDynamic = common.NewKubeClientDynamic("", kubeconfigHub, "")
-	clientManaged = common.NewKubeClient("", kubeconfigManaged, "")
-	clientManagedDynamic = common.NewKubeClientDynamic("", kubeconfigManaged, "")
+	clientHub = common.ClientHub
+	clientHubDynamic = common.ClientHubDynamic
+	clientManaged = common.ClientManaged
+	clientManagedDynamic = common.ClientManagedDynamic
 
 	By("Create Namespace if needed")
 	namespaces := clientHub.CoreV1().Namespaces()

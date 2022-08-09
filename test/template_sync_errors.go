@@ -24,21 +24,15 @@ func TemplateSyncErrors(labels ...string) bool {
 				OcHub("delete", "-f", nonexistentPolicyKindYaml, "-n", UserNamespace)
 			})
 			It("Should be noncompliant with a mapping not found status", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
-				DoCreatePolicyTest(clientHubDynamic, clientManagedDynamic, nonexistentPolicyKindYaml)
-				DoRootComplianceTest(clientHubDynamic, nonexistentPolicyKindName, policiesv1.NonCompliant)
+				DoCreatePolicyTest(nonexistentPolicyKindYaml)
+				DoRootComplianceTest(nonexistentPolicyKindName, policiesv1.NonCompliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, nonexistentPolicyKindName, 0),
+					GetLatestStatusMessage(nonexistentPolicyKindName, 0),
 					DefaultTimeoutSeconds, 1,
 				).Should(MatchRegexp(".*Mapping not found.*"))
 			})
 			It("Should become compliant when the kind is fixed", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
 				OcHub("patch", "policies.policy.open-cluster-management.io", nonexistentPolicyKindName,
 					"-n", UserNamespace, "--type=json", "-p", `[{
 						"op":"replace",
@@ -46,23 +40,20 @@ func TemplateSyncErrors(labels ...string) bool {
 						"value":"ConfigurationPolicy"
 					}]`)
 
-				DoRootComplianceTest(clientHubDynamic, nonexistentPolicyKindName, policiesv1.Compliant)
+				DoRootComplianceTest(nonexistentPolicyKindName, policiesv1.Compliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, nonexistentPolicyKindName, 0),
+					GetLatestStatusMessage(nonexistentPolicyKindName, 0),
 					DefaultTimeoutSeconds, 1,
 				).ShouldNot(MatchRegexp(".*Mapping not found.*"))
 			})
 			It("Should become noncompliant when the original policy is restored", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
 				OcHub("apply", "-f", nonexistentPolicyKindYaml, "-n", UserNamespace)
 
-				DoRootComplianceTest(clientHubDynamic, nonexistentPolicyKindName, policiesv1.NonCompliant)
+				DoRootComplianceTest(nonexistentPolicyKindName, policiesv1.NonCompliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, nonexistentPolicyKindName, 0),
+					GetLatestStatusMessage(nonexistentPolicyKindName, 0),
 					DefaultTimeoutSeconds, 1,
 				).Should(MatchRegexp(".*Mapping not found.*"))
 			})
@@ -72,21 +63,15 @@ func TemplateSyncErrors(labels ...string) bool {
 				OcHub("delete", "-f", invalidCRPolicyYaml, "-n", UserNamespace)
 			})
 			It("Should be noncompliant and report the reason the CR is invalid", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
-				DoCreatePolicyTest(clientHubDynamic, clientManagedDynamic, invalidCRPolicyYaml)
-				DoRootComplianceTest(clientHubDynamic, invalidCRPolicyName, policiesv1.NonCompliant)
+				DoCreatePolicyTest(invalidCRPolicyYaml)
+				DoRootComplianceTest(invalidCRPolicyName, policiesv1.NonCompliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, invalidCRPolicyName, 0),
+					GetLatestStatusMessage(invalidCRPolicyName, 0),
 					DefaultTimeoutSeconds, 1,
 				).Should(MatchRegexp(".*Failed to create.*Unsupported value.*"))
 			})
 			It("Should become compliant when the spec is fixed", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
 				OcHub("patch", "policies.policy.open-cluster-management.io", invalidCRPolicyName,
 					"-n", UserNamespace, "--type=json", "-p", `[{
 						"op":"replace",
@@ -94,23 +79,20 @@ func TemplateSyncErrors(labels ...string) bool {
 						"value":"None"
 					}]`)
 
-				DoRootComplianceTest(clientHubDynamic, invalidCRPolicyName, policiesv1.Compliant)
+				DoRootComplianceTest(invalidCRPolicyName, policiesv1.Compliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, invalidCRPolicyName, 0),
+					GetLatestStatusMessage(invalidCRPolicyName, 0),
 					DefaultTimeoutSeconds, 1,
 				).ShouldNot(MatchRegexp(".*Failed to create.*Unsupported value.*"))
 			})
 			It("Should become noncompliant when the original policy is restored", func() {
-				clientManagedDynamic := NewKubeClientDynamic("", KubeconfigManaged, "")
-				clientHubDynamic := NewKubeClientDynamic("", KubeconfigHub, "")
-
 				OcHub("apply", "-f", invalidCRPolicyYaml, "-n", UserNamespace)
 
-				DoRootComplianceTest(clientHubDynamic, invalidCRPolicyName, policiesv1.NonCompliant)
+				DoRootComplianceTest(invalidCRPolicyName, policiesv1.NonCompliant)
 
 				Eventually(
-					GetLatestStatusMessage(clientManagedDynamic, invalidCRPolicyName, 0),
+					GetLatestStatusMessage(invalidCRPolicyName, 0),
 					DefaultTimeoutSeconds, 1,
 				).Should(MatchRegexp(".*Failed to update.*Unsupported value.*"))
 			})

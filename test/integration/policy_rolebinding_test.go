@@ -75,7 +75,7 @@ var _ = Describe("GRC: [P1][Sev1][policy-grc] Test the policy-rolebinding policy
 	It("stable/"+policyRoleBindingName+" should be NonCompliant", func() {
 		By("Checking if the status of the root policy is NonCompliant")
 		Eventually(
-			common.GetComplianceState(clientHubDynamic, userNamespace, policyRoleBindingName, clusterNamespace),
+			common.GetComplianceState(policyRoleBindingName),
 			defaultTimeoutSeconds*2,
 			1,
 		).Should(Equal(policiesv1.NonCompliant))
@@ -96,7 +96,7 @@ var _ = Describe("GRC: [P1][Sev1][policy-grc] Test the policy-rolebinding policy
 	It("stable/"+policyRoleBindingName+" should be Compliant", func() {
 		By("Checking if the status of the root policy is Compliant")
 		Eventually(
-			common.GetComplianceState(clientHubDynamic, userNamespace, policyRoleBindingName, clusterNamespace),
+			common.GetComplianceState(policyRoleBindingName),
 			defaultTimeoutSeconds*2,
 			1,
 		).Should(Equal(policiesv1.Compliant))
