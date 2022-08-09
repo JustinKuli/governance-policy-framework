@@ -4,54 +4,15 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	"open-cluster-management.io/governance-policy-propagator/test/utils"
 
 	"github.com/stolostron/governance-policy-framework/test/common"
 )
-
-// GetClusterLevelWithTimeout keeps polling to get the object for timeout seconds until wantFound is met (true for found, false for not found)
-func GetClusterLevelWithTimeout(
-	clientHubDynamic dynamic.Interface,
-	gvr schema.GroupVersionResource,
-	name string,
-	wantFound bool,
-	timeout int,
-) *unstructured.Unstructured {
-	if timeout < 1 {
-		timeout = 1
-	}
-	var obj *unstructured.Unstructured
-
-	Eventually(func() error {
-		var err error
-		namespace := clientHubDynamic.Resource(gvr)
-		obj, err = namespace.Get(context.TODO(), name, metav1.GetOptions{})
-		if wantFound && err != nil {
-			return err
-		}
-		if !wantFound && err == nil {
-			return fmt.Errorf("expected to return IsNotFound error")
-		}
-		if !wantFound && err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-		return nil
-	}, timeout, 1).Should(BeNil())
-	if wantFound {
-		return obj
-	}
-	return nil
-}
 
 const GKOPolicyYaml string = "../resources/gatekeeper/policy-gatekeeper-operator.yaml"
 
@@ -73,13 +34,13 @@ var _ = Describe("Test gatekeeper", Ordered, func() {
 		const cfgpolauditName string = "policy-gatekeeper-audit"
 		const cfgpoladmissionName string = "policy-gatekeeper-admission"
 		It("should deploy gatekeeper release on managed cluster", func() {
-			configCRD := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "configs.config.gatekeeper.sh", true, defaultTimeoutSeconds)
+			configCRD := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "configs.config.gatekeeper.sh", true, defaultTimeoutSeconds)
 			Expect(configCRD).NotTo(BeNil())
-			cpsCRD := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constraintpodstatuses.status.gatekeeper.sh", true, defaultTimeoutSeconds)
+			cpsCRD := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constraintpodstatuses.status.gatekeeper.sh", true, defaultTimeoutSeconds)
 			Expect(cpsCRD).NotTo(BeNil())
-			ctpsCRD := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constrainttemplatepodstatuses.status.gatekeeper.sh", true, defaultTimeoutSeconds)
+			ctpsCRD := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constrainttemplatepodstatuses.status.gatekeeper.sh", true, defaultTimeoutSeconds)
 			Expect(ctpsCRD).NotTo(BeNil())
-			ctCRD := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constrainttemplates.templates.gatekeeper.sh", true, defaultTimeoutSeconds)
+			ctCRD := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "constrainttemplates.templates.gatekeeper.sh", true, defaultTimeoutSeconds)
 			Expect(ctCRD).NotTo(BeNil())
 		})
 		It("configurationPolicies should be created on managed", func() {
@@ -95,26 +56,26 @@ var _ = Describe("Test gatekeeper", Ordered, func() {
 		})
 		It("K8sRequiredLabels ns-must-have-gk should be created on managed", func() {
 			By("Checking if K8sRequiredLabels CRD exists")
-			k8srequiredlabelsCRD := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "k8srequiredlabels.constraints.gatekeeper.sh", true, defaultTimeoutSeconds*2)
+			k8srequiredlabelsCRD := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrCRD, "k8srequiredlabels.constraints.gatekeeper.sh", true, defaultTimeoutSeconds*2)
 			Expect(k8srequiredlabelsCRD).NotTo(BeNil())
 			By("Checking if ns-must-have-gk CR exists")
-			nsMustHaveGkCR := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds*2)
+			nsMustHaveGkCR := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds*2)
 			Expect(nsMustHaveGkCR).NotTo(BeNil())
 		})
 		It("K8sRequiredLabels ns-must-have-gk should be properly enforced for audit, no violation expected", func() {
 			By("Checking if ns-must-have-gk status field has been updated")
 			Eventually(func() interface{} {
-				nsMustHaveGkCR := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
+				nsMustHaveGkCR := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
 				return nsMustHaveGkCR.Object["status"]
 			}, defaultTimeoutSeconds*2, 1).ShouldNot(BeNil())
 			By("Checking if ns-must-have-gk status.totalViolations is equal to 0")
 			Eventually(func() interface{} {
-				nsMustHaveGkCR := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
+				nsMustHaveGkCR := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
 				return nsMustHaveGkCR.Object["status"].(map[string]interface{})["totalViolations"]
 			}, defaultTimeoutSeconds*4, 1).Should(Equal(int64(0)))
 			By("Checking if ns-must-have-gk status.violations field has been updated")
 			Eventually(func() interface{} {
-				nsMustHaveGkCR := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
+				nsMustHaveGkCR := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
 				fmt.Printf("%v\n", nsMustHaveGkCR.Object["status"].(map[string]interface{})["violations"])
 				return nsMustHaveGkCR.Object["status"].(map[string]interface{})["violations"]
 			}, defaultTimeoutSeconds*2, 1).Should(BeNil())
@@ -122,7 +83,7 @@ var _ = Describe("Test gatekeeper", Ordered, func() {
 		It("K8sRequiredLabels ns-must-have-gk should be properly enforced for admission", func() {
 			By("Checking if ns-must-have-gk status.byPod field size is 3")
 			Eventually(func() interface{} {
-				nsMustHaveGkCR := GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
+				nsMustHaveGkCR := utils.GetClusterLevelWithTimeout(clientManagedDynamic, common.GvrK8sRequiredLabels, "ns-must-have-gk", true, defaultTimeoutSeconds)
 				return len(nsMustHaveGkCR.Object["status"].(map[string]interface{})["byPod"].([]interface{}))
 			}, defaultTimeoutSeconds*8, 1).Should(Equal(3))
 		})
