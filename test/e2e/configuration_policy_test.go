@@ -78,10 +78,7 @@ var _ = Describe("Test configuration policy", Ordered, func() {
 		})
 		It("the policy should be compliant after enforcing it", func() {
 			By("Patching remediationAction = enforce on root policy")
-			rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, rolePolicyName, userNamespace, true, defaultTimeoutSeconds)
-			rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
-			rootPlc, _ = clientHubDynamic.Resource(common.GvrPolicy).Namespace(userNamespace).Update(context.TODO(), rootPlc, metav1.UpdateOptions{})
-			Expect(rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]).To(Equal("enforce"))
+			common.EnforcePolicy(rolePolicyName)
 
 			common.DoRootComplianceTest(rolePolicyName, policiesv1.Compliant)
 		})
@@ -170,10 +167,7 @@ var _ = Describe("Test configuration policy", Ordered, func() {
 		})
 		It("the policy should be compliant after enforcing it", func() {
 			By("Patching remediationAction = enforce on root policy")
-			rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, rolePolicyName, userNamespace, true, defaultTimeoutSeconds)
-			rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
-			rootPlc, _ = clientHubDynamic.Resource(common.GvrPolicy).Namespace(userNamespace).Update(context.TODO(), rootPlc, metav1.UpdateOptions{})
-			Expect(rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]).To(Equal("enforce"))
+			common.EnforcePolicy(rolePolicyName)
 
 			common.DoRootComplianceTest(rolePolicyName, policiesv1.Compliant)
 		})
@@ -252,17 +246,7 @@ var _ = Describe("Test configuration policy", Ordered, func() {
 		})
 		It("the policy should be compliant after enforcing it", func() {
 			By("Patching remediationAction = enforce on root policy")
-			rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, rolePolicyName, userNamespace, true, defaultTimeoutSeconds)
-			rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
-			clientHubDynamic.Resource(common.GvrPolicy).Namespace(userNamespace).Update(context.TODO(), rootPlc, metav1.UpdateOptions{})
-			Eventually(func() interface{} {
-				rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, rolePolicyName, userNamespace, true, defaultTimeoutSeconds)
-				remediation, ok := rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]
-				if !ok {
-					return nil
-				}
-				return remediation
-			}, defaultTimeoutSeconds, 1).Should(utils.SemanticEqual("enforce"))
+			common.EnforcePolicy(rolePolicyName)
 
 			common.DoRootComplianceTest(rolePolicyName, policiesv1.Compliant)
 		})

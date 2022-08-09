@@ -83,15 +83,9 @@ var _ = Describe("", Ordered, Label("policy-collection", "community"), func() {
 			Eventually(getComplianceState(gatekeeperPolicyName), defaultTimeoutSeconds*2, 1).Should(Equal(policiesv1.NonCompliant))
 		})
 		It("Enforcing community/policy-gatekeeper-operator", func() {
-			Eventually(func() interface{} {
-				By("Patching remediationAction = enforce on root policy")
-				rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, gatekeeperPolicyName, userNamespace, true, defaultTimeoutSeconds)
-				rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
-				clientHubDynamic.Resource(common.GvrPolicy).Namespace(userNamespace).Update(context.TODO(), rootPlc, metav1.UpdateOptions{})
-				By("Checking if remediationAction is enforce for root policy")
-				rootPlc = utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, gatekeeperPolicyName, userNamespace, true, defaultTimeoutSeconds)
-				return rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]
-			}, defaultTimeoutSeconds, 1).Should(Equal("enforce"))
+			By("Patching remediationAction = enforce on root policy")
+			common.EnforcePolicy(gatekeeperPolicyName)
+
 			By("Checking if remediationAction is enforce for replicated policy")
 			Eventually(func() interface{} {
 				managedPlc := utils.GetWithTimeout(clientManagedDynamic, common.GvrPolicy, userNamespace+"."+gatekeeperPolicyName, clusterNamespace, true, defaultTimeoutSeconds)
@@ -277,15 +271,9 @@ var _ = Describe("", Ordered, Label("policy-collection", "community"), func() {
 			}, defaultTimeoutSeconds, 1).Should(Equal("Enabled"))
 		})
 		It("Enforcing policy-gatekeeper-operator to enable mutation feature", func() {
-			Eventually(func() interface{} {
-				By("Patching remediationAction = enforce on root policy")
-				rootPlc := utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, gatekeeperPolicyName, userNamespace, true, defaultTimeoutSeconds)
-				rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
-				clientHubDynamic.Resource(common.GvrPolicy).Namespace(userNamespace).Update(context.TODO(), rootPlc, metav1.UpdateOptions{})
-				By("Checking if remediationAction is enforce for root policy")
-				rootPlc = utils.GetWithTimeout(clientHubDynamic, common.GvrPolicy, gatekeeperPolicyName, userNamespace, true, defaultTimeoutSeconds)
-				return rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]
-			}, defaultTimeoutSeconds, 1).Should(Equal("enforce"))
+			By("Patching remediationAction = enforce on root policy")
+			common.EnforcePolicy(gatekeeperPolicyName)
+
 			By("Checking if remediationAction is enforce for replicated policy")
 			Eventually(func() interface{} {
 				managedPlc := utils.GetWithTimeout(clientManagedDynamic, common.GvrPolicy, userNamespace+"."+gatekeeperPolicyName, clusterNamespace, true, defaultTimeoutSeconds)

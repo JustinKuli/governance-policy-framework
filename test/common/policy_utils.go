@@ -165,3 +165,17 @@ func GetLatestStatusMessage(policyName string, templateIdx int) string {
 	message, _, _ := unstructured.NestedString(topHistoryItem, "message")
 	return message
 }
+
+func EnforcePolicy(name string) {
+	rootPlc := utils.GetWithTimeout(
+		ClientHubDynamic, GvrPolicy, name, UserNamespace, true, DefaultTimeoutSeconds,
+	)
+
+	rootPlc.Object["spec"].(map[string]interface{})["remediationAction"] = "enforce"
+
+	rootPlc, _ = ClientHubDynamic.Resource(GvrPolicy).Namespace(UserNamespace).Update(
+		context.TODO(), rootPlc, metav1.UpdateOptions{},
+	)
+
+	gomega.Expect(rootPlc.Object["spec"].(map[string]interface{})["remediationAction"]).To(gomega.Equal("enforce"))
+}
