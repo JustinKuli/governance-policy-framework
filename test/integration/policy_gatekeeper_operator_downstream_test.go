@@ -10,12 +10,35 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	"open-cluster-management.io/governance-policy-propagator/test/utils"
 
 	"github.com/stolostron/governance-policy-framework/test/common"
 )
+
+func isOCP44() bool {
+	clusterVersion, err := clientManagedDynamic.Resource(common.GvrClusterVersion).Get(
+		context.TODO(),
+		"version",
+		metav1.GetOptions{},
+	)
+	if err != nil && k8serrors.IsNotFound(err) {
+		// no version CR, not ocp
+		klog.V(5).Infof("This is not an OCP cluster")
+
+		return false
+	}
+
+	desired := clusterVersion.Object["status"].(map[string]interface{})["desired"]
+	version, _ := desired.(map[string]interface{})["version"].(string)
+
+	klog.V(5).Infof("OCP Version %s\n", version)
+
+	return strings.HasPrefix(version, "4.4")
+}
 
 var _ = Describe("RHACM4K-3055", Ordered, Label("policy-collection", "stable", "BVT"), func() {
 	BeforeAll(func() {
