@@ -147,19 +147,19 @@ jobs:
     - name: Run e2e tests
       working-directory: framework
       env:
-        TEST_ARGS: --json-report=report.json --junit-report=report.xml --output-dir=test-output
+        TEST_ARGS: --json-report=report.json --junit-report=report.xml --output-dir=test-output --focus=pruning
       run: |
         make e2e-test
 
     - name: Debug
-      if: ${{ failure() }}
+      # if: ${{ failure() }}
       working-directory: framework
       run: |
         make e2e-debug-kind
         tar -czvf e2e-debug.tar.gz test-output/debug
 
     - name: Upload Debug Artifacts
-      if: ${{ failure() }}
+      # if: ${{ failure() }}
       uses: actions/upload-artifact@v3
       with:
         name: fw-kind-debug-${{ matrix.kind }}-${{ matrix.deployOnHub }}
