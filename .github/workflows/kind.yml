@@ -30,6 +30,7 @@ jobs:
         # (for reference, OCP 4.6 runs Kubernetes v1.19)
         # KinD tags are listed at https://hub.docker.com/r/kindest/node/tags
         kind:
+          - 'latest'
           - 'v1.19.16'
           - 'v1.20.15'
           - 'v1.21.14'
