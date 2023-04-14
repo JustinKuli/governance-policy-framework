@@ -147,7 +147,7 @@ kind-deploy-config-policy-controller:
 	kubectl apply -f https://raw.githubusercontent.com/stolostron/config-policy-controller/$(RELEASE_BRANCH)/deploy/operator.yaml -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)
 	kubectl apply -f https://raw.githubusercontent.com/stolostron/config-policy-controller/$(RELEASE_BRANCH)/deploy/crds/policy.open-cluster-management.io_configurationpolicies.yaml -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)
 	kubectl patch deployment config-policy-controller -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) \
-		-p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"config-policy-controller\",\"image\":\"${DOCKER_URI}/config-policy-controller:${VERSION_TAG}\"}]}}}}"
+		-p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"config-policy-controller\",\"image\":\"${DOCKER_URI}/config-policy-controller:2.8.0-SNAPSHOT-2023-04-07-17-05-05\"}]}}}}"
 
 .PHONY: kind-deploy-cert-policy-controller
 kind-deploy-cert-policy-controller:
