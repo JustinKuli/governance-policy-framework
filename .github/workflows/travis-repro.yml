@@ -1,0 +1,71 @@
+name: travis-e2e
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release-2.[7-9]
+  push:
+    branches:
+      - main
+      - release-2.[7-9]
+
+env:
+  TEST_FILE: 'policy_ordering'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  tests:
+    name: Tests
+
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: localhost:5000
+    strategy:
+      # Don't skip all tests if one fails - others may still have useful info
+      fail-fast: false
+      matrix:
+        name:
+          - 'one'
+          - 'two'
+          - 'three'
+          - 'four'
+          - 'five'
+          - 'six'
+          - 'seven'
+          - 'eight'
+          - 'nine'
+          - 'ten'
+
+    steps:
+    - name: Checkout Policy Framework
+      uses: actions/checkout@v3
+      with:
+        path: framework
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: framework/go.mod
+
+    - name: Do the test
+      working-directory: framework
+      env:
+        deployOnHub: 'true'
+        FW_RUN_NAME: ${{ matrix.name }}
+      run: |
+        echo "$FW_RUN_NAME starting"
+        ./build/run-e2e-tests.sh
+
+    - name: Debug dump
+      working-directory: framework
+      env:
+        deployOnHub: 'true'
+        FW_RUN_NAME: ${{ matrix.name }}
+      run: |
+        echo "$FW_RUN_NAME dump"
+        make e2e-debug-dump
+      
