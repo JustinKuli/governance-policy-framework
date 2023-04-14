@@ -1,10 +1,10 @@
 name: E2E # Part of the check name, be careful when changing.
 
 on:
-  pull_request:
-    branches:
-      - main
-      - release-2.[7-9]
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - release-2.[7-9]
   push:
     branches:
       - main
