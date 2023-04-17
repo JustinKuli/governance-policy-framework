@@ -139,7 +139,7 @@ kind-deploy-policy-framework:
 	kubectl apply -f https://raw.githubusercontent.com/stolostron/governance-policy-framework-addon/$(RELEASE_BRANCH)/deploy/operator.yaml -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME)
 	echo patching governance-policy-framework-addon to set the managed cluster
 	kubectl patch deployment governance-policy-framework-addon -n $(KIND_MANAGED_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) \
-		-p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"governance-policy-framework-addon\",\"image\":\"quay.io/justinkuli/scratchpad:fw-addon-9789424-2023-107T1747Z\",\"args\":[\"--hub-cluster-configfile=/var/run/klusterlet/kubeconfig\", \"--cluster-namespace=$(MANAGED_CLUSTER_NAME)\", \"--enable-lease=true\", \"--log-level=2\", \"--disable-spec-sync=$(deployOnHub)\"]}]}}}}"
+		-p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"governance-policy-framework-addon\",\"image\":\"quay.io/justinkuli/scratchpad:fw-addon-e71ccc0-2023-107T1942Z\",\"args\":[\"--hub-cluster-configfile=/var/run/klusterlet/kubeconfig\", \"--cluster-namespace=$(MANAGED_CLUSTER_NAME)\", \"--enable-lease=true\", \"--log-level=2\", \"--disable-spec-sync=$(deployOnHub)\"]}]}}}}"
 
 .PHONY: kind-deploy-config-policy-controller
 kind-deploy-config-policy-controller:
