@@ -166,7 +166,7 @@ func oc(args ...string) (string, error) {
 
 	output, err := exec.Command(K8sClient, args...).Output()
 	if len(args) > 0 && printOutput {
-		klog.V(2).Infof("OC command output %s\n", output)
+		fmt.Printf("OC command output:\n %s\n", output)
 	}
 
 	var exitError *exec.ExitError

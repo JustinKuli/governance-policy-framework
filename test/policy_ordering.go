@@ -32,6 +32,16 @@ func PolicyOrdering(labels ...string) bool {
 	)
 
 	cleanup := func() {
+		By("Hub get policy -A -oyaml")
+		OcHub("get", "policy", "-A", "-oyaml")
+		By("Hub get configpolicy -A -oyaml")
+		OcHub("get", "configurationpolicy", "-A", "-oyaml")
+
+		By("Managed get policy -A -oyaml")
+		OcManaged("get", "policy", "-A", "-oyaml")
+		By("Managed get configpolicy -A -oyaml")
+		OcManaged("get", "configurationpolicy", "-A", "-oyaml")
+
 		By("Cleaning up")
 		DoCleanupPolicy(initialPolicyYaml)
 		DoCleanupPolicy(policyWithDepYaml)
