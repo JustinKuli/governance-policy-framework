@@ -276,6 +276,7 @@ e2e-debug-kind: e2e-debug
 			kubectl logs -l $(KIND_COMPONENT_SELECTOR)=$${APP} -n $(KIND_MANAGED_NAMESPACE) -c $${CONTAINER} --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) --tail=-1 >> $(DEBUG_DIR)/managed_logs_$${CONTAINER}.log;\
 		done;\
 	done
+	kubectl logs -l app=governance-policy-framework-addon -n $(KIND_MANAGED_NAMESPACE) -c governance-policy-framework-addon --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) --tail=-1 >> $(DEBUG_DIR)/managed_logs_governance-policy-framework-addon.log
 
 .PHONY: e2e-debug-acm
 e2e-debug-acm: e2e-debug
