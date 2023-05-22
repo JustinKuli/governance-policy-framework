@@ -77,7 +77,7 @@ func ConfigPruneBehavior(labels ...string) bool {
 			cfgPol := utils.GetWithTimeout(clientHostingDynamic, GvrConfigurationPolicy,
 				policyName, ClusterNamespace, true, DefaultTimeoutSeconds)
 
-			compliant, _, _ := unstructured.NestedString(cfgPol.Object, "status", "compliant")
+			compliant, _, _ := unstructured.NestedString(cfgPol.Object, "status", "broken")
 
 			return compliant
 		}, DefaultTimeoutSeconds, 1).Should(Equal(string(policiesv1.Compliant)))
