@@ -93,7 +93,16 @@ jobs:
         make fmt
         git diff --exit-code
         make lint
-
+    
+    - name: Patch Component Image (addon-controller, hosted)
+      # The Framework's Make target will use this version of the addon-controller to deploy components for hosted mode
+      if: ${{ matrix.hosted == 'hosted' && github.event.repository.name == 'governance-policy-addon-controller' }}
+      uses: actions/checkout@v3
+      with:
+        # `repository` is inferred as the "caller" repository 
+        path: framework/governance-policy-addon-controller
+        # `ref` is inferred as the new commit
+  
     - name: Bootstrap the KinD Cluster
       working-directory: framework
       env:
@@ -128,12 +137,11 @@ jobs:
         echo "::endgroup::"
 
     - name: Patch Component Image
-      if: ${{ github.event.repository.name != 'governance-policy-framework' }}
+      if: ${{ github.event.repository.name != 'governance-policy-framework' && matrix.hosted == '' }}
       working-directory: component
       env:
         deployOnHub: ${{ matrix.deployOnHub }}
         HUB_ONLY: ${{ inputs.hub_only_component }}
-        HOSTED: ${{ matrix.hosted }}
       run: |
         if [[ "$RELEASE_BRANCH" != "main" ]]; then
           export TAG=latest-$(echo $RELEASE_BRANCH | cut -d'-' -f 2):
@@ -145,12 +153,7 @@ jobs:
         export HUB_CONFIG=${HUB_KUBECONFIG}
         export HUB_CONFIG_INTERNAL=${HUB_INTERNAL_KUBECONFIG}
 
-        if [[ "${HOSTED}" == "hosted" ]]; then
-          export WATCH_NAMESPACE=cluster2-hosted
-          export KIND_NAMESPACE=cluster2-hosted
-          export KIND_NAME=policy-addon-ctrl1
-          export KUBECONFIG=${HUB_KUBECONFIG}
-        elif [[ "${deployOnHub}" == "true" ]] || [[ "${HUB_ONLY}" == "true" ]]; then
+        if [[ "${deployOnHub}" == "true" ]] || [[ "${HUB_ONLY}" == "true" ]]; then
           export WATCH_NAMESPACE=managed
           export KIND_NAME=hub
           export KUBECONFIG=${HUB_KUBECONFIG}
@@ -169,6 +172,40 @@ jobs:
         echo "::group::make kind-deploy-controller-dev"
         make kind-deploy-controller-dev
         echo "::endgroup::"
+
+    - name: Patch Component Image (hosted)
+      if: ${{ github.event.repository.name != 'governance-policy-framework' && github.event.repository.name != 'governance-policy-addon-controller' && matrix.hosted == 'hosted' }}
+      working-directory: component
+      env:
+        deployOnHub: ${{ matrix.deployOnHub }}
+        HUB_ONLY: ${{ inputs.hub_only_component }}
+      run: |
+        # this image won't actually pushed to quay:
+        export IMAGE_NAME_AND_VERSION=quay.io/governance-policy-framework/component
+        export TAG=updated
+
+        echo "::group::build and load image"
+        make build-images
+        export NEW_IMAGE="${IMAGE_NAME_AND_VERSION}:${TAG}"
+        kind load docker-image "${NEW_IMAGE}" --name policy-addon-ctrl1
+        echo "::endgroup::"
+
+        export KUBECONFIG=${HUB_KUBECONFIG}
+
+        if [[ "${HUB_ONLY}" == "true" ]] then
+          # Must be the propagator
+          kubectl -n open-cluster-management set image deployment/governance-policy-propagator "governance-policy-propagator=${NEW_IMAGE}"
+          kubectl -n open-cluster-management rollout status deployment/governance-policy-propagator --timeout=60s
+        else        
+          echo "::group::update the addon-controller to use the new image"
+          # component "foo-bar" becomes "FOO_BAR_IMAGE": 
+          export IMAGE_ENV="$(tr "[:lower:]-" "[:upper:]_" < COMPONENT_NAME)_IMAGE"
+
+          kubectl -n governance-policy-addon-controller-system set env deployment/policy-addon-ctrl-controller-manager "${IMAGE_ENV}=${NEW_IMAGE}"
+          kubectl -n governance-policy-addon-controller-system set env deployment/policy-addon-ctrl-controller-manager --list
+          kubectl -n governance-policy-addon-controller-system rollout status deployment/policy-addon-ctrl-controller-manager --timeout=60s
+          echo "::endgroup::"
+        end
 
     - name: Run e2e tests
       working-directory: framework
