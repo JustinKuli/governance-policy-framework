@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grc-cov-collector
+spec:
+  containers:
+    - name: coverage-collector
+      image: quay.io/justinkuli/scratchpad:coverage-collector-2023-193T2024Z
+      command:
+        - "sleep"
+        - "3600"
+      volumeMounts:
+      - mountPath: /tmp/covdata/cert-pol-ctrl
+        name: cert-pol-ctrl-covdata
+      - mountPath: /tmp/covdata/config-pol-ctrl
+        name: config-pol-ctrl-covdata
+      - mountPath: /tmp/covdata/gov-pol-fw
+        name: gov-pol-fw-covdata
+      - mountPath: /tmp/covdata/iam-pol-ctrl
+        name: iam-pol-ctrl-covdata
+  volumes:
+    - name: cert-pol-ctrl-covdata
+      persistentVolumeClaim:
+        claimName: cert-pol-ctrl-covdata
+    - name: config-pol-ctrl-covdata
+      persistentVolumeClaim:
+        claimName: config-pol-ctrl-covdata
+    - name: gov-pol-fw-covdata
+      persistentVolumeClaim:
+        claimName: gov-pol-fw-covdata
+    - name: iam-pol-ctrl-covdata
+      persistentVolumeClaim:
+        claimName: iam-pol-ctrl-covdata

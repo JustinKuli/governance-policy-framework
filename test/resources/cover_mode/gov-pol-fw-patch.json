@@ -1,0 +1,28 @@
+[{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/env/-", 
+    "value": {
+        "name": "GOCOVERDIR",
+        "value": "/tmp/covdata"
+    }
+},{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/volumeMounts/-", 
+    "value": {
+        "name": "covdata",
+        "mountPath": "/tmp/covdata"
+    }
+},{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/volumes/-", 
+    "value": {
+        "name": "covdata",
+        "persistentVolumeClaim": {
+            "claimName": "gov-pol-fw-covdata"
+        }
+    }
+},{
+    "op": "replace", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/image", 
+    "value": "quay.io/justinkuli/scratchpad:polfw-cover-2023-193T1813Z"
+}]

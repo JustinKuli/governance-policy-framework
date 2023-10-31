@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grc-cov-hub-collector
+spec:
+  containers:
+    - name: coverage-collector
+      image: quay.io/justinkuli/scratchpad:coverage-collector-2023-193T2024Z
+      command:
+        - "/collector.sh"
+        - "hub"
+      volumeMounts:
+      - mountPath: /tmp/covdata/propagator
+        name: propagator-covdata
+  volumes:
+    - name: propagator-covdata
+      persistentVolumeClaim:
+        claimName: propagator-covdata

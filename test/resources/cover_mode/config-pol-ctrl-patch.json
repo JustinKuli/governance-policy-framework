@@ -1,0 +1,28 @@
+[{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/env/-", 
+    "value": {
+        "name": "GOCOVERDIR",
+        "value": "/tmp/covdata"
+    }
+},{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/volumeMounts/-", 
+    "value": {
+        "name": "covdata",
+        "mountPath": "/tmp/covdata"
+    }
+},{
+    "op": "add", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/volumes/-", 
+    "value": {
+        "name": "covdata",
+        "persistentVolumeClaim": {
+            "claimName": "config-pol-ctrl-covdata"
+        }
+    }
+},{
+    "op": "replace", 
+    "path": "/spec/workload/manifests/1/spec/template/spec/containers/1/image", 
+    "value": "quay.io/justinkuli/scratchpad:config-cover-2023-193T1808Z"
+}]

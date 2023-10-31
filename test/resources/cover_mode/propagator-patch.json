@@ -1,0 +1,32 @@
+[{
+    "op": "add",
+    "path": "/spec/template/spec/containers/1/env/-",
+    "value": {
+        "name": "GOCOVERDIR",
+        "value": "/tmp/covdata"
+    }
+},{
+    "op": "add",
+    "path": "/spec/template/spec/containers/1/volumeMounts/-",
+    "value": {
+        "name": "covdata",
+        "mountPath": "/tmp/covdata"
+    }
+},{
+    "op": "add",
+    "path": "/spec/template/spec/volumes/-",
+    "value": {
+        "name": "covdata",
+        "persistentVolumeClaim": {
+            "claimName": "propagator-covdata"
+        }
+    }
+},{
+    "op": "replace",
+    "path":"/spec/replicas",
+    "value": 1
+},{
+    "op": "replace",
+    "path": "/spec/template/spec/containers/1/image",
+    "value": "quay.io/justinkuli/scratchpad:propagator-cover-2023-193T1820Z"
+}]
