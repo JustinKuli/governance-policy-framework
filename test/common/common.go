@@ -102,10 +102,6 @@ func InitInterfaces(hubConfig, managedConfig string, isHosted bool) {
 		ClientHostingDynamic = NewKubeClientDynamic("", managedConfig, "")
 	}
 
-	if ClusterNamespaceOnHub == "" {
-		ClusterNamespaceOnHub = ClusterNamespace
-	}
-
 	ClientHub = NewKubeClient("", hubConfig, "")
 	ClientHubDynamic = NewKubeClientDynamic("", hubConfig, "")
 	ClientManaged = NewKubeClient("", managedConfig, "")

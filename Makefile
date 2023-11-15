@@ -31,7 +31,11 @@ export PATH := $(LOCAL_BIN):$(GOBIN):$(PATH)
 # Handle KinD configuration
 KIND_HUB_NAMESPACE ?= open-cluster-management
 KIND_MANAGED_NAMESPACE ?= open-cluster-management-agent-addon
-MANAGED_CLUSTER_NAME ?= managed
+ifeq ($(deployOnHub), true)
+  MANAGED_CLUSTER_NAME ?= local-cluster
+else
+  MANAGED_CLUSTER_NAME ?= managed
+endif
 HUB_CLUSTER_NAME ?= hub
 KIND_VERSION ?= latest
 
@@ -249,10 +253,10 @@ install-resources:
 	@echo creating user namespace on hub
 	kubectl create ns policy-test --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	@echo creating cluster namespace on hub 
-	kubectl create ns managed --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
+	kubectl create ns $(MANAGED_CLUSTER_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	kubectl apply -f test/resources/managed-cluster.yaml --kubeconfig=$(PWD)/kubeconfig_$(HUB_CLUSTER_NAME)
 	@echo creating cluster namespace on managed 
-	kubectl create ns managed --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) || true
+	kubectl create ns $(MANAGED_CLUSTER_NAMESPACE) --kubeconfig=$(PWD)/kubeconfig_$(MANAGED_CLUSTER_NAME) || true
 
 .PHONY: e2e-dependencies
 e2e-dependencies:
@@ -260,7 +264,8 @@ e2e-dependencies:
 K8SCLIENT ?= oc
 GINKGO = $(LOCAL_BIN)/ginkgo
 IS_HOSTED ?= false
-MANAGED_CLUSTER_NAMESPACE ?= managed
+MANAGED_CLUSTER_NAMESPACE ?= $(MANAGED_CLUSTER_NAME)
+PATCH_DECISIONS ?= true
 
 .PHONY: e2e-test
 e2e-test:
@@ -349,7 +354,7 @@ e2e-debug-dump:
 
 .PHONY: integration-test
 integration-test:
-	$(GINKGO) -v $(TEST_ARGS) test/integration
+	$(GINKGO) -v $(TEST_ARGS) test/integration -- -cluster_namespace=$(MANAGED_CLUSTER_NAMESPACE) -k8s_client=$(K8SCLIENT) -is_hosted=$(IS_HOSTED) -cluster_namespace_on_hub=$(MANAGED_CLUSTER_NAMESPACE) -patch_decisions=false
 
 #hosted
 ADDON_CONTROLLER = $(PWD)/.go/governance-policy-addon-controller

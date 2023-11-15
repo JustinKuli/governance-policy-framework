@@ -9,7 +9,7 @@ on:
         default: 'false'
 
 env:
-  RELEASE_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
+  RELEASE_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name || 'main' }}
 
 defaults:
   run:
@@ -98,6 +98,7 @@ jobs:
       working-directory: framework
       env:
         deployOnHub: ${{ matrix.deployOnHub }}
+        MANAGED_CLUSTER_NAME: ${{ matrix.deployOnHub == 'true' && 'local-cluster' || 'managed' }}
         KIND_VERSION: ${{ matrix.kind }}
         HOSTED: ${{ matrix.hosted }}
       run: |
